@@ -1,0 +1,137 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+package "Model" {
+
+    class Client {
+        - id : int
+        - firstName : String
+        - lastName : String
+        - email : String
+        + getFullName() : String
+        + getEmail() : String
+    }
+
+    abstract class Account {
+        - id : int
+        - accountNumber : String
+        - balance : BigDecimal
+        - creationDate : LocalDate
+        + getBalance() : BigDecimal
+        + deposit(amount : BigDecimal) : void
+        + withdraw(amount : BigDecimal) : void
+    }
+
+    class CurrentAccount {
+        - overdraftLimit : BigDecimal
+    }
+
+    class SavingsAccount {
+        - interestRate : BigDecimal
+        + calculateInterest() : BigDecimal
+    }
+
+    class Operation {
+        - id : int
+        - operationType : OperationType
+        - amount : BigDecimal
+        - operationDate : LocalDate
+    }
+
+    enum OperationType {
+        DEPOSIT
+        WITHDRAWAL
+    }
+
+    Account <|-- CurrentAccount
+    Account <|-- SavingsAccount
+
+    Client "1" -- "0..*" Account
+    Account "1" -- "0..*" Operation
+}
+
+package "Factory" {
+
+    class AccountFactory{
+        + createAccount(type : String) : Account
+    }
+}
+
+AccountFactory ..> Account : creates
+
+package "Service" {
+
+    class BankService {
+        - accountFactory : AccountFactory
+        - accountDAO : AccountDAO
+        - clientDAO : ClientDAO
+        - operationDAO : OperationDAO
+        + BankService(accountDAO : AccountDAO, clientDAO : ClientDAO, operationDAO : OperationDAO, accountFactory : AccountFactory)
+        + getAllClients() : List<Client>
+        + getAccountsByClientId(clientId : int) : List<Account>
+        + getOperationHistory(accountId : int) : List<Operation>
+        + deposit(accountId : int, amount : BigDecimal) : void
+        + withdraw(accountId : int, amount : BigDecimal) : void
+        + createAccount(clientId : int, type : String) : Account
+    }
+}
+
+package "Database" {
+    class DatabaseConnection {
+        - instance : DatabaseConnection {static}
+        - connection : Connection
+        - DatabaseConnection()
+        + getInstance() : DatabaseConnection {static}
+        - connect() : void
+        + getConnection() : Connection
+    }
+}
+
+package "DAO" {
+    interface AccountDAO {
+        + findById(id : int) : Account
+        + findAllByClientId(clientId : int) : List<Account>
+        + update(account : Account) : void
+        + insert(account : Account) : void
+    }
+
+    interface ClientDAO {
+        + findAll() : List<Client>
+        + findById(id : int) : Client
+    }
+
+    interface OperationDAO {
+        + findAllByAccountId(accountId : int) : List<Operation>
+        + save(operation : Operation) : void
+    }
+
+    class MySQLClientDAO
+    class MySQLAccountDAO
+    class MySQLOperationDAO
+
+    ClientDAO <|.. MySQLClientDAO
+    AccountDAO <|.. MySQLAccountDAO
+    OperationDAO <|.. MySQLOperationDAO
+}
+
+package "Exception" {
+
+    class AccountNotFoundException
+    class InsufficientBalanceException
+
+    AccountNotFoundException --|> RuntimeException
+    InsufficientBalanceException --|> RuntimeException
+}
+
+BankService --> AccountDAO
+BankService --> ClientDAO
+BankService --> OperationDAO
+BankService --> AccountFactory
+
+MySQLAccountDAO ..> DatabaseConnection
+MySQLClientDAO ..> DatabaseConnection
+MySQLOperationDAO ..> DatabaseConnection
+
+BankService ..> AccountNotFoundException
+Account ..> InsufficientBalanceException
+@enduml
