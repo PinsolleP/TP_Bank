@@ -1,5 +1,13 @@
 package model;
 
+/**
+ * Defines the types of banking operations.
+ */
 public enum OperationType{
-    DEPOSIT, WITHDRAWAL
+
+    /** Represents a deposit operation. */
+    DEPOSIT,
+
+    /** Represents a withdrawal operation. */
+    WITHDRAWAL
     }
